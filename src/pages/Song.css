@@ -1,0 +1,82 @@
+:root {
+  --gradient: linear-gradient(90deg, #ee6352, purple, #ee6352);
+}
+
+.background {
+  min-height: calc(100vh);
+  background-size: 300%;
+  background-image: var(--gradient);
+  animation: bg-animation 20s infinite;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player {
+  max-width: 320px;
+  margin: 32px auto;
+  background: #f8f8f8;
+  border-radius: 16px;
+}
+
+.music-image {
+  width: 100%;
+  height: 100%;
+  vertical-align: top;
+  object-fit: contain;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.player-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.time span {
+  width: 32px;
+}
+
+.player-buttons {
+  width: 80%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.player-buttons button {
+  background: #333;
+  color: white;
+  height: 60px;
+  width: 60px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+}
+
+input[type="range"] {
+  width: 200px;
+  margin-inline: 8px;
+  accent-color: #333;
+  cursor: pointer;
+}
+
+@keyframes bg-animation {
+  0% {
+    background-position: left;
+  }
+  50% {
+    background-position: right;
+  }
+  100% {
+    background-position: left;
+  }
+}
