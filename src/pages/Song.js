@@ -81,7 +81,7 @@ function Song() {
     if (songs !== null) {
       setSongs(songs);
     }
-  }, [songId, fetchSong]);
+  }, [songId, fetchSong, history]);
 
   if (isLoading) {
     return <Loader />;
