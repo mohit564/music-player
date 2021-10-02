@@ -4,17 +4,26 @@ import axios from "axios";
 import MusicList from "../components/MusicList";
 import Loader from "../components/Loader";
 
+const HISTORY_SIZE = 5;
+
 function Search() {
   const queryRef = useRef();
+  const datalistRef = useRef();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [items, setItems] = useState([]);
 
+  // Save the query in local storage
+  let searchHistory = localStorage.getItem("searchHistory")
+    ? JSON.parse(localStorage.getItem("searchHistory"))
+    : [];
+
   const onSubmitFormHandler = async (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
+
     try {
       const query = queryRef.current.value.trim().replace(/\s+/g, "+");
       const res = await axios.get(
@@ -25,6 +34,16 @@ function Search() {
         setItems(res.data);
         sessionStorage.setItem("songs", JSON.stringify(res.data));
       }
+      // To make sure duplicate search queries will not be stored
+      searchHistory = new Set(searchHistory);
+      searchHistory.add(queryRef.current.value.trim());
+      searchHistory = Array.from(searchHistory);
+      // This will limit search history array size to HISTORY_SIZE
+      searchHistory.splice(
+        -searchHistory.length - 1,
+        searchHistory.length - HISTORY_SIZE
+      );
+      localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
     } catch (error) {
       console.error(error);
       setError("Something went wrong!");
@@ -32,6 +51,14 @@ function Search() {
       setIsLoading(false);
     }
   };
+
+  function onFocusInputHandler() {
+    datalistRef.current.innerHTML = searchHistory
+      .map((item) => {
+        return `<option value="${item}"" />`;
+      })
+      .join("");
+  }
 
   let content = "";
 
@@ -52,15 +79,19 @@ function Search() {
           <form className="py-3" onSubmit={onSubmitFormHandler}>
             <div className="input-group">
               <input
-                type="text"
-                className="form-control"
                 ref={queryRef}
+                type="text"
+                name="q"
+                list="searchHistory"
+                className="form-control"
                 placeholder="Search song or album here"
                 aria-label="Search song or album here"
                 aria-describedby="buttonAfter"
+                onFocus={onFocusInputHandler}
                 autoComplete="off"
                 required
               />
+              <datalist ref={datalistRef} id="searchHistory" />
               <button
                 type="submit"
                 className="btn btn-secondary"
