@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import axios from "axios";
 
@@ -14,6 +14,7 @@ import {
 
 function Song() {
   const [isLoading, setIsLoading] = useState(false);
+  const [songs, setSongs] = useState([]);
   const [song, setSong] = useState({
     id: "",
     src: "",
@@ -22,39 +23,36 @@ function Song() {
     artists: "",
     duration: "0.00",
   });
-  const [songs, setSongs] = useState([]);
 
   const history = useHistory();
-
   const params = useParams();
   const { songId } = params;
 
-  const fetchSong = useCallback(
-    async (id) => {
-      setIsLoading(true);
-      try {
-        const song_info = await axios.get(
-          `${process.env.REACT_APP_API_GET_SONG_DETAIL + id}`
-        );
-        const song_url = await axios.get(
-          `${process.env.REACT_APP_API_GET_SONG_URL + id}`
-        );
+  useEffect(() => {
+    setIsLoading(true);
+
+    // Fetch the song details
+    axios
+      .get(`${process.env.REACT_APP_API_GET_SONG_DETAIL + songId}`)
+      .then((response) => {
         setSong({
-          id: song_info.data.song_id,
-          src: song_url.data.url,
-          image: song_info.data.song_image,
-          title: song_info.data.song_name,
-          artists: song_info.data.song_artist,
-          duration: calculateTime(song_info.data.song_duration),
+          id: response.data[songId].id,
+          image: response.data[songId].image,
+          title: response.data[songId].song,
+          artists: response.data[songId].primary_artists,
+          src: response.data[songId].media_preview_url
+            .replace("preview.saavncdn.com", "aac.saavncdn.com")
+            .replace("_96_p", "_320"),
+          duration: calculateTime(response.data[songId].duration),
         });
-        setIsLoading(false);
-      } catch (error) {
-        console.error(error);
-        history.push("/NotFound");
-      }
-    },
-    [history]
-  );
+      })
+      .catch(() => history.push("/NotFound"))
+      .finally(() => setIsLoading(false));
+
+    // get search results or playlist songs
+    // which are stored in browser storage
+    setSongs(JSON.parse(sessionStorage.getItem("songs")) || []);
+  }, [songId, history]);
 
   const nextSong = () => {
     var idx = songs.findIndex((song) => song.id === songId);
@@ -73,15 +71,6 @@ function Song() {
       history.push(`/songs/${songs[idx - 1].id}`);
     }
   };
-
-  useEffect(() => {
-    fetchSong(songId);
-    // get playlist or search result songs browser storage
-    const songs = JSON.parse(sessionStorage.getItem("songs"));
-    if (songs !== null) {
-      setSongs(songs);
-    }
-  }, [songId, fetchSong, history]);
 
   if (isLoading) {
     return <Loader />;
@@ -103,7 +92,11 @@ function Song() {
             autoPlay={true}
             playsInline={true}
           ></video>
-          <img className="music-image" src={song.image} alt="music-album-art" />
+          <img
+            className="music-image"
+            src={song.image.replace(/(\d{3}x\d{3})/, "500x500")}
+            alt="album-art"
+          />
           <div className="p-3">
             <h5 dangerouslySetInnerHTML={{ __html: song.title }}></h5>
             <p dangerouslySetInnerHTML={{ __html: song.artists }}></p>

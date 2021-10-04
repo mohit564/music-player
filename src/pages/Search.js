@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
 
-import MusicList from "../components/MusicList";
+import MusicItems from "../components/MusicCard/MusicItems";
 import Loader from "../components/Loader";
 
 const HISTORY_SIZE = 5;
@@ -19,37 +19,46 @@ function Search() {
     ? JSON.parse(localStorage.getItem("searchHistory"))
     : [];
 
-  const onSubmitFormHandler = async (event) => {
+  const onSubmitFormHandler = (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    try {
-      const query = queryRef.current.value.trim().replace(/\s+/g, "+");
-      const res = await axios.get(
-        `${process.env.REACT_APP_API_SEARCH_SONG + query}`
-      );
-      // If no result found then api will return { "result": "false" } json data
-      if (res.data.result !== "false") {
-        setItems(res.data);
-        sessionStorage.setItem("songs", JSON.stringify(res.data));
-      }
-      // To make sure duplicate search queries will not be stored
-      searchHistory = new Set(searchHistory);
-      searchHistory.add(queryRef.current.value.trim());
-      searchHistory = Array.from(searchHistory);
-      // This will limit search history array size to HISTORY_SIZE
-      searchHistory.splice(
-        -searchHistory.length - 1,
-        searchHistory.length - HISTORY_SIZE
-      );
-      localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
-    } catch (error) {
-      console.error(error);
-      setError("Something went wrong!");
-    } finally {
-      setIsLoading(false);
-    }
+    // remove spaces and replace with + sign
+    const query = queryRef.current.value.trim().replace(/\s+/g, "+");
+
+    // fetch search results
+    axios
+      .get(`${process.env.REACT_APP_API_SEARCH_SONG + query}`)
+      .then((response) => {
+        if (!response.data.error) {
+          setItems(response.data.results);
+          sessionStorage.setItem(
+            "songs",
+            JSON.stringify(response.data.results)
+          );
+        }
+
+        // To make sure duplicate search queries will not be stored
+        searchHistory = new Set(searchHistory);
+        searchHistory.add(queryRef.current.value.trim());
+        searchHistory = Array.from(searchHistory);
+
+        // This will limit search history array size to HISTORY_SIZE
+        searchHistory.splice(
+          -searchHistory.length - 1,
+          searchHistory.length - HISTORY_SIZE
+        );
+
+        // store search history in browser storage
+        localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+      })
+      .catch(() => {
+        setError("Something went wrong!");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   function onFocusInputHandler() {
@@ -61,7 +70,6 @@ function Search() {
   }
 
   let content = "";
-
   if (isLoading) {
     content = <Loader />;
   } else if (error) {
@@ -69,7 +77,7 @@ function Search() {
   } else if (!isLoading && !error && items.length === 0) {
     content = <p className="text-center">Found no songs.</p>;
   } else if (!isLoading && !error && items.length > 0) {
-    content = <MusicList items={items} />;
+    content = <MusicItems items={items} />;
   }
 
   return (
